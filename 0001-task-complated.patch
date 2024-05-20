@@ -1,0 +1,157 @@
+From cf592a23ef899c254b5d67c17027cc45d4b8d47b Mon Sep 17 00:00:00 2001
+From: Divya Gadhiya <divyagadhiya@Divyas-MacBook-Air.local>
+Date: Mon, 20 May 2024 15:41:48 -0400
+Subject: [PATCH] task complated
+
+---
+ package.json           |  4 ++-
+ src/DataManipulator.ts | 57 ++++++++++++++++++++++++++++++++++--------
+ src/Graph.tsx          | 18 +++++++++----
+ 3 files changed, 63 insertions(+), 16 deletions(-)
+
+diff --git a/package.json b/package.json
+index 8ca3a60..93b32c5 100644
+--- a/package.json
++++ b/package.json
+@@ -15,7 +15,8 @@
+     "puppeteer": "^1.19.0",
+     "react": "^16.9.0",
+     "react-dom": "^16.9.0",
+-    "react-scripts": "2.1.3"
++    "react-scripts": "2.1.3",
++    "uuid": "^9.0.1"
+   },
+   "scripts": {
+     "start": "react-scripts --openssl-legacy-provider start",
+@@ -33,6 +34,7 @@
+     "not op_mini all"
+   ],
+   "devDependencies": {
++    "@types/uuid": "^9.0.8",
+     "awesome-typescript-loader": "^5.2.1",
+     "source-map-loader": "^0.2.4",
+     "typescript": "^3.2.4"
+diff --git a/src/DataManipulator.ts b/src/DataManipulator.ts
+index 7f62295..706d34d 100644
+--- a/src/DataManipulator.ts
++++ b/src/DataManipulator.ts
+@@ -1,20 +1,57 @@
+ import { ServerRespond } from './DataStreamer';
++// import { v4 as uuidv4 } from 'uuid';
+ 
+ export interface Row {
+-  stock: string,
+-  top_ask_price: number,
++  price_abc: number,
++  price_def: number,
++  ratio: number,
+   timestamp: Date,
++  upper_bound: number,
++  lower_bound: number,
++  trigger_alert: number | undefined
++  // price_abc : number,
++  // price_def : number,
++  // // stock: string,
++  // // top_ask_price: number,
++  // ratio: number,
++  // timestamp: Date,
++  // // top_bid_price: number,
++  // upper_bound: number,
++  // lower_bound: number,
++  // trigger_alert: number | undefined
+ }
+ 
+ 
+ export class DataManipulator {
+-  static generateRow(serverResponds: ServerRespond[]) {
+-    return serverResponds.map((el: any) => {
+-      return {
+-        stock: el.stock,
+-        top_ask_price: el.top_ask && el.top_ask.price || 0,
+-        timestamp: el.timestamp,
+-      };
+-    })
++  static generateRow(serverRespond: ServerRespond[]) {
++    const priceABC : number = (serverRespond[0].top_ask.price + serverRespond[0].top_bid.price) / 2;
++    const priceDEF : number = (serverRespond[1].top_ask.price + serverRespond[1].top_bid.price) / 2;
++    const ratio: number = priceABC / priceDEF;
++    const upperBound: number = 1 + 0.05;
++    const lowerBound: number = 1 - 0.05;
++    // const temp = (serverRespond[0].timestamp > serverRespond[1].timestamp ? serverRespond[0].timestamp: serverRespond[1].timestamp);
++    // const timestamp = temp instanceof Date ? temp.toISOString() : '';
++
++return {
++  price_abc: priceABC.toString(),
++  price_def: priceDEF.toString(), 
++  ratio:ratio.toString(),
++  timestamp : '',
++  upper_bound: upperBound.toString(), 
++  lower_bound: lowerBound.toString(),
++  trigger_alert: (ratio > upperBound || ratio < lowerBound) ? ratio.toString() : '', 
++}
++   // return serverResponds.map((el: any) => {
++    //   return {
++    //     stock: el.stock,
++    //     top_ask_price: el.top_ask && el.top_ask.price || 0,
++    //     timestamp: el.timestamp,
++    //     price_abc : el.price_abc,
++    //     top_bid_price:  el.top_bid_price,
++    //     upper_bound:  el.upper_bound,
++    //     lower_bound:  el.lower_bound,
++    //     trigger_alert:  el.trigger_alert,
++    //   };
++    // })
+   }
+ }
+diff --git a/src/Graph.tsx b/src/Graph.tsx
+index 277797d..434ecfc 100644
+--- a/src/Graph.tsx
++++ b/src/Graph.tsx
+@@ -1,5 +1,5 @@
+ import React, { Component } from 'react';
+-import { Table } from '@finos/perspective';
++import { Table, TableData } from '@finos/perspective';
+ import { ServerRespond } from './DataStreamer';
+ import { DataManipulator } from './DataManipulator';
+ import './Graph.css';
+@@ -23,10 +23,15 @@ class Graph extends Component<IProps, {}> {
+     const elem = document.getElementsByTagName('perspective-viewer')[0] as unknown as PerspectiveViewerElement;
+ 
+     const schema = {
+-      stock: 'string',
+-      top_ask_price: 'float',
+-      top_bid_price: 'float',
++      id: 'float',
++      price_abc: 'float',
++      price_def: 'float',
++      ratio: 'float',
+       timestamp: 'date',
++      upper_bound: 'float',
++      lower_bound: 'float',
++      trigger_alert: 'float'
++
+     };
+ 
+     if (window.perspective && window.perspective.worker()) {
+@@ -44,6 +49,9 @@ class Graph extends Component<IProps, {}> {
+         top_ask_price: 'avg',
+         top_bid_price: 'avg',
+         timestamp: 'distinct count',
++        upper_bound: 'avg',
++        lower_bound: 'avg',
++        trigger_alert: 'avg'
+       }));
+     }
+   }
+@@ -52,7 +60,7 @@ class Graph extends Component<IProps, {}> {
+     if (this.table) {
+       this.table.update(
+         DataManipulator.generateRow(this.props.data),
+-      );
++      ) as unknown as TableData ;
+     }
+   }
+ }
+-- 
+2.39.2 (Apple Git-143)
+
